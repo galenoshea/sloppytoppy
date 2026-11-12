@@ -2,6 +2,15 @@
 
 A small [ratatui](https://ratatui.rs) TUI that lists every running `claude` and `codex` process and lets you terminate them.
 
+## Install
+
+```sh
+cargo install sloppytoppy          # once published to crates.io
+cargo install --git https://github.com/galenoshea/sloppytoppy   # from source
+```
+
+Then run `sloppytoppy`.
+
 ## Keys
 
 | Key | Action |
