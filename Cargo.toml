@@ -1,0 +1,11 @@
+[package]
+name = "sloppytoppy"
+version = "0.1.0"
+edition = "2024"
+description = "TUI to view and kill running claude and codex processes"
+license = "MIT"
+repository = "https://github.com/galenoshea/sloppytoppy"
+
+[dependencies]
+ratatui = "0.30.2"
+sysinfo = "0.38.4"
