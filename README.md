@@ -15,6 +15,10 @@
 
 Watch Claude Code and Codex processes, see what each session is consuming, and stop a runaway agent without leaving the terminal.
 
+![sloppytoppy dashboard showing live agent processes, CPU, memory, and token usage](https://raw.githubusercontent.com/galenoshea/sloppytoppy/master/assets/sloppytoppy.png)
+
+<p align="center"><em>sloppytoppy in action</em></p>
+
 `sloppytoppy` combines live process telemetry with the token data already recorded by each agent CLI. It provides:
 
 - live CPU, memory, uptime, and token totals
