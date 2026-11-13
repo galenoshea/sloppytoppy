@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, System, UpdateKind};
 
-use super::{ProcessEntry, Tool};
+use super::{ProcessEntry, Tool, display_command};
 use crate::usage::{ClaudeProvider, CodexProvider, UsageProvider};
 
 /// One point-in-time view of every agent process.
@@ -68,7 +68,7 @@ impl Sampler {
                     cpu: p.cpu_usage(),
                     memory: p.memory(),
                     uptime: p.run_time(),
-                    command: argv.join(" "),
+                    command: display_command(&argv),
                     cwd: p.cwd().map(ToOwned::to_owned),
                     usage: None,
                 })

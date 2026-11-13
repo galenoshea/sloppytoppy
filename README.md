@@ -67,7 +67,9 @@ Tokens are normalized into non-overlapping input, output, cache-read, and cache-
 - Process discovery only accepts an executable name—or a supported interpreter script name—whose file stem is exactly `claude` or `codex`.
 - Before sending a signal, the PID is checked against fresh process state to confirm that it is still a recognized agent process owned by the current user.
 - Every signal requires confirmation. `k` requests a graceful shutdown; `K` is the explicit force-kill path.
-- Session logs are read-only, the application has no network client, and unsafe Rust is forbidden.
+- Session logs are read-only, only token/accounting fields are parsed, and environment-variable values are never displayed.
+- Process arguments are kept local; common credential flags and assignments are redacted before display or plain-text output.
+- The application has no network client, and unsafe Rust is forbidden.
 
 ## Project structure
 

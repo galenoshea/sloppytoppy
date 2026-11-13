@@ -1,1 +1,12 @@
 /target
+.DS_Store
+
+# Local configuration and credentials must never enter release history.
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.*

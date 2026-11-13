@@ -74,6 +74,70 @@ impl fmt::Display for Tool {
     }
 }
 
+/// Formats an argument vector for display without exposing common credential
+/// values or allowing control characters to reach the terminal.
+pub(crate) fn display_command(argv: &[String]) -> String {
+    fn sensitive_key(key: &str) -> bool {
+        let key = key
+            .trim_start_matches('-')
+            .to_ascii_lowercase()
+            .replace('-', "_");
+        let tail = key.rsplit(['.', '/']).next().unwrap_or(&key);
+        matches!(
+            tail,
+            "apikey"
+                | "api_key"
+                | "authorization"
+                | "credential"
+                | "password"
+                | "private_key"
+                | "secret"
+                | "token"
+        ) || [
+            "_api_key",
+            "_apikey",
+            "_credential",
+            "_password",
+            "_private_key",
+            "_secret",
+            "_token",
+        ]
+        .iter()
+        .any(|suffix| tail.ends_with(suffix))
+    }
+
+    fn clean(text: &str) -> String {
+        text.chars()
+            .map(|c| if c.is_control() { '?' } else { c })
+            .collect()
+    }
+
+    let mut out = Vec::with_capacity(argv.len());
+    let mut redact_next = false;
+    for arg in argv {
+        if redact_next {
+            out.push("[REDACTED]".to_owned());
+            redact_next = false;
+            continue;
+        }
+        if let Some((key, _)) = arg.split_once('=')
+            && sensitive_key(key)
+        {
+            out.push(format!("{}=[REDACTED]", clean(key)));
+        } else if sensitive_key(arg) {
+            out.push(clean(arg));
+            redact_next = true;
+        } else if arg.to_ascii_lowercase().starts_with("authorization:")
+            || arg.to_ascii_lowercase().starts_with("bearer ")
+        {
+            out.push("[REDACTED]".to_owned());
+        } else {
+            out.push(clean(arg));
+        }
+    }
+    out.join(" ")
+}
+
 /// One running agent process.
 #[derive(Debug, Clone)]
 pub struct ProcessEntry {
@@ -87,7 +151,7 @@ pub struct ProcessEntry {
     pub memory: u64,
     /// Seconds since the process started.
     pub uptime: u64,
-    /// Full command line.
+    /// Display-safe command line with common credential values redacted.
     pub command: String,
     /// Working directory, when visible to us.
     pub cwd: Option<PathBuf>,
@@ -189,6 +253,24 @@ mod tests {
             None
         );
         assert_eq!(Tool::classify("vim", &argv(&["vim", "codex"])), None);
+    }
+
+    #[test]
+    fn display_command_redacts_credentials_and_controls() {
+        let command = display_command(&argv(&[
+            "codex",
+            "--api-key",
+            "value-one",
+            "OPENAI_API_KEY=value-two",
+            "--auth-token=value-three",
+            "exec",
+            "hello\u{1b}[2J",
+        ]));
+        assert_eq!(
+            command,
+            "codex --api-key [REDACTED] OPENAI_API_KEY=[REDACTED] --auth-token=[REDACTED] exec hello?[2J"
+        );
+        assert!(!command.contains("value-"));
     }
 
     #[test]

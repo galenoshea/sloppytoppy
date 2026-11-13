@@ -32,6 +32,8 @@ That allows subsequent version tags to publish with short-lived credentials inst
    cargo fmt --all -- --check
    cargo clippy --all-targets --all-features -- -D warnings
    cargo test --all-targets --all-features
+   cargo audit
+   gitleaks git . --redact=100
    cargo publish --dry-run --locked
    dist plan --tag vX.Y.Z
    ```
