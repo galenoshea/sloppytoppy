@@ -1,59 +1,90 @@
 # sloppytoppy
 
-A red-themed [ratatui](https://ratatui.rs) dashboard for your running **Claude Code** and **Codex** processes: live CPU/memory/token graphs, per-session token usage, and safe process termination.
+**`top` for AI coding agents.** Watch Claude Code and Codex processes, see what each session is consuming, and stop a runaway agent without leaving the terminal.
+
+`sloppytoppy` combines live process telemetry with the token data already recorded by each agent CLI. It provides:
+
+- live CPU, memory, uptime, and token totals
+- per-session model, context-window, cache, and turn details
+- filters for Claude Code and Codex processes
+- guarded `SIGTERM` and `SIGKILL` actions with confirmation
+- a plain-text snapshot mode for scripts and shell pipelines
 
 ## Install
 
+From the repository:
+
 ```sh
-cargo install sloppytoppy                                       # once published to crates.io
-cargo install --git https://github.com/galenoshea/sloppytoppy   # from source
+cargo install --git https://github.com/galenoshea/sloppytoppy
 ```
+
+Or, once the crate is published:
+
+```sh
+cargo install sloppytoppy
+```
+
+Requires Rust 1.88 or newer.
 
 ## Usage
 
 ```sh
-sloppytoppy                 # interactive TUI
-sloppytoppy --once          # print one plain-text snapshot (scriptable)
-sloppytoppy --interval 500  # sampling interval in ms (200–60000)
-sloppytoppy --no-usage      # don't read session logs
+sloppytoppy                 # open the live dashboard
+sloppytoppy --once          # print one plain-text snapshot and exit
+sloppytoppy --interval 500  # sample every 500 ms (range: 200–60000)
+sloppytoppy --no-usage      # skip session logs and token accounting
 ```
+
+### Controls
 
 | Key | Action |
 | --- | --- |
-| `↑` `↓` / `j` | select |
-| `g` / `G` | first / last |
-| `Tab` / `←` `→` | filter All / Claude / Codex |
-| `k` | terminate (SIGTERM), with confirmation |
-| `K` | force kill (SIGKILL), with confirmation |
-| `r` | refresh now |
-| `q` / `Esc` | quit |
+| `↑` | Move the selection up |
+| `↓` or `j` | Move the selection down |
+| `g` / `G` | Jump to the first / last process |
+| `Tab` or `←` / `→` | Filter All / Claude / Codex |
+| `k` | Request termination (`SIGTERM`) |
+| `K` | Force kill (`SIGKILL`) |
+| `r` | Refresh now |
+| `q`, `Esc`, or `Ctrl-C` | Quit |
 
 ## Token usage
 
-Usage is read from the session logs the CLIs already write — nothing is sent anywhere:
+Usage comes from the local session logs the CLIs already write. `sloppytoppy` does not send this data anywhere or make network requests.
 
-| Tool | Source | Env override |
+| Agent | Local source | Environment override |
 | --- | --- | --- |
 | Claude Code | `~/.claude/projects/<cwd>/<session>.jsonl` | `CLAUDE_CONFIG_DIR` |
 | Codex | `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` | `CODEX_HOME` |
 
-Tokens are normalised into disjoint buckets (input, output, cache read, cache write) plus context-window fill. A process is matched to its session by working directory (newest log wins), so two instances in the *same* directory share one session's numbers. Streamed Claude responses are de-duplicated by message id. Logs are re-parsed only when their size or mtime changes.
+Tokens are normalized into non-overlapping input, output, cache-read, and cache-write buckets, plus context-window fill. A process is matched to the newest session log for its working directory, so two agents running in the same directory may show the same session totals. Streamed Claude responses are de-duplicated by message ID, and logs are only re-parsed when their size or modification time changes.
 
-## Safety
+## Safety and privacy
 
-- Only processes whose executable (or interpreter script) file stem is exactly `claude` or `codex` are listed.
-- Before any signal, the PID is re-verified against fresh process state (still claude/codex, owned by you) to close PID-reuse races; a confirmation dialog is always shown.
-- `#![forbid(unsafe_code)]`, no network access, read-only access to logs.
+- Process discovery only accepts an executable name—or a supported interpreter script name—whose file stem is exactly `claude` or `codex`.
+- Before sending a signal, the PID is checked against fresh process state to confirm that it is still a recognized agent process owned by the current user.
+- Every signal requires confirmation. `k` requests a graceful shutdown; `K` is the explicit force-kill path.
+- Session logs are read-only, the application has no network client, and unsafe Rust is forbidden.
 
-## Layout
+## Project structure
 
-```
+```text
 src/
-  process/   discovery, background sampler thread, guarded kill
-  usage/     UsageProvider trait + Claude and Codex log parsers
-  app.rs     state + update logic (no rendering)   input.rs  key bindings
-  ui/        stateless ratatui rendering, one module per panel
-tests/       provider tests against fixture trees
+  process/   process discovery, background sampling, and guarded signals
+  usage/     Claude Code and Codex session-log providers
+  ui/        stateless terminal rendering, split by panel
+  app.rs     application state and update logic
+  input.rs   key bindings
+  report.rs  plain-text output for --once
+tests/       provider tests against temporary fixture trees
 ```
 
-MSRV: Rust 1.88. Licensed MIT.
+## Development
+
+```sh
+cargo fmt --all -- --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all-targets --all-features
+```
+
+Licensed under the MIT License.

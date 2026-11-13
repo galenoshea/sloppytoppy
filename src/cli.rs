@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use clap::Parser;
 
-/// View and stop running Claude and Codex processes, with live token usage.
+/// Monitor and control Claude Code and Codex agents from the terminal.
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
 pub struct Cli {
@@ -16,7 +16,7 @@ pub struct Cli {
     #[arg(long)]
     pub no_usage: bool,
 
-    /// Print a single plain-text snapshot and exit instead of starting the TUI.
+    /// Print a single plain-text snapshot and exit instead of opening the dashboard.
     #[arg(long)]
     pub once: bool,
 }

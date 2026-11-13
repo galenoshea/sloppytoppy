@@ -47,7 +47,7 @@ impl CodexProvider {
     /// Newest recent rollout whose recorded cwd equals `cwd`.
     fn find_log(&mut self, cwd: &Path) -> io::Result<Option<PathBuf>> {
         let mut logs = recent_logs(&self.sessions_dir)?;
-        logs.sort_by(|a, b| b.0.cmp(&a.0));
+        logs.sort_by_key(|(modified, _)| std::cmp::Reverse(*modified));
         for (_, path) in logs {
             let recorded = self
                 .cwd_by_log

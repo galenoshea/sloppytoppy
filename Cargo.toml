@@ -3,12 +3,12 @@ name = "sloppytoppy"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
-description = "TUI to view and kill running claude and codex processes"
+description = "Terminal process and token monitor for Claude Code and Codex agents"
 license = "MIT"
 repository = "https://github.com/galenoshea/sloppytoppy"
 
 readme = "README.md"
-keywords = ["tui", "ratatui", "claude", "codex", "process"]
+keywords = ["ai-agents", "claude", "codex", "monitoring", "terminal"]
 categories = ["command-line-utilities", "development-tools"]
 exclude = [".github/", "target/"]
 

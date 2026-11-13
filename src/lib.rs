@@ -1,11 +1,11 @@
-//! `sloppytoppy`: a terminal dashboard for running Claude and Codex processes.
+//! `sloppytoppy`: a terminal process and token monitor for AI coding agents.
 //!
 //! The crate is split so each concern is testable on its own:
 //!
 //! * [`process`]: discover, sample (on a background thread) and safely signal processes.
 //! * [`usage`]: parse the CLIs' session logs into token counts.
 //! * [`app`] / [`input`]: UI state and key bindings, free of rendering.
-//! * [`ui`]: stateless ratatui rendering.
+//! * [`ui`]: stateless terminal rendering.
 
 pub mod app;
 pub mod cli;
