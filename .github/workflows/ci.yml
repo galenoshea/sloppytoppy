@@ -6,7 +6,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: -D warnings
+  # Fail on any lint warning from this workspace (Cargo 1.97+; ignored by the 1.88 job).
+  CARGO_BUILD_WARNINGS: deny
 
 permissions:
   contents: read

@@ -84,7 +84,7 @@ impl Sum for TokenUsage {
     }
 }
 
-impl<'a> Sum<&'a TokenUsage> for TokenUsage {
+impl<'a> Sum<&'a Self> for TokenUsage {
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.copied().sum()
     }

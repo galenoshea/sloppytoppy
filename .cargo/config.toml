@@ -1,0 +1,5 @@
+# Supply-chain hardening: when resolving *new* dependency versions (e.g. `cargo
+# update`), ignore releases published in the last 7 days unless they are already
+# pinned in Cargo.lock. Respected by Cargo 1.100+; older versions ignore the key.
+[registry]
+global-min-publish-age = "7 days"

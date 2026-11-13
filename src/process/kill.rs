@@ -37,9 +37,10 @@ pub enum KillError {
     Refused(Pid),
 }
 
-/// Signals `pid` after re-checking, against fresh process state, that it is
-/// still a claude/codex process owned by the current user. This closes the
-/// window in which a PID could have been recycled since the last sample.
+/// Signals `pid` if it is still a claude/codex process owned by the current user.
+///
+/// The check runs against fresh process state, which closes the window in
+/// which a PID could have been recycled since the last sample.
 ///
 /// # Errors
 /// See [`KillError`].
