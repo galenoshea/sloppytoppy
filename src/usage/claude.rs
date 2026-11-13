@@ -70,7 +70,13 @@ fn newest_log(dir: &Path) -> io::Result<Option<PathBuf>> {
         if path.extension().is_none_or(|e| e != "jsonl") {
             continue;
         }
-        let Ok(modified) = entry.metadata().and_then(|m| m.modified()) else {
+        // `DirEntry::metadata` does not follow symlinks, so this admits only
+        // regular files: no symlinks to /dev/zero, FIFOs or sockets.
+        let Ok(meta) = entry.metadata() else { continue };
+        if !meta.is_file() {
+            continue;
+        }
+        let Ok(modified) = meta.modified() else {
             continue;
         };
         if best.as_ref().is_none_or(|(t, _)| modified > *t) {
@@ -159,12 +165,12 @@ pub(crate) fn parse(reader: impl BufRead) -> io::Result<SessionUsage> {
             out.model = message.model;
         }
         let usage = TokenUsage::from(raw);
-        out.context_tokens = usage.input + usage.cache_read + usage.cache_write;
+        out.context_tokens = usage.context();
         if let Some(id) = message.id {
             by_id.insert(id, usage);
         } else {
             anonymous += usage;
-            anonymous_turns += 1;
+            anonymous_turns = anonymous_turns.saturating_add(1);
         }
     }
 
@@ -199,6 +205,18 @@ not json but mentions "usage"
         assert_eq!(u.tokens.cache_write, 10);
         assert_eq!(u.tokens.reasoning, 20);
         assert_eq!(u.context_tokens, 201);
+    }
+
+    #[test]
+    fn hostile_counts_do_not_panic() {
+        let max = u64::MAX;
+        let log = format!(
+            r#"{{"message":{{"id":"a","usage":{{"input_tokens":{max},"output_tokens":{max},"cache_read_input_tokens":{max},"cache_creation_input_tokens":{max}}}}}}}
+{{"message":{{"id":"b","usage":{{"input_tokens":{max}}}}}}}
+"#
+        );
+        let u = parse(log.as_bytes()).unwrap();
+        assert_eq!(u.tokens.total(), u64::MAX);
     }
 
     #[test]

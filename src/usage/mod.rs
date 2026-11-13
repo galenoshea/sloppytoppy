@@ -37,9 +37,24 @@ pub struct TokenUsage {
 
 impl TokenUsage {
     /// Sum of the four disjoint buckets.
+    ///
+    /// Log files are untrusted input, so arithmetic saturates instead of
+    /// overflowing (which would panic in debug builds and wrap in release).
     #[must_use]
     pub const fn total(&self) -> u64 {
-        self.input + self.output + self.cache_read + self.cache_write
+        self.input
+            .saturating_add(self.output)
+            .saturating_add(self.cache_read)
+            .saturating_add(self.cache_write)
+    }
+
+    /// Tokens that count towards the context window: everything sent to the
+    /// model, i.e. fresh plus cached input.
+    #[must_use]
+    pub const fn context(&self) -> u64 {
+        self.input
+            .saturating_add(self.cache_read)
+            .saturating_add(self.cache_write)
     }
 }
 
@@ -48,11 +63,11 @@ impl Add for TokenUsage {
 
     fn add(self, rhs: Self) -> Self {
         Self {
-            input: self.input + rhs.input,
-            output: self.output + rhs.output,
-            cache_read: self.cache_read + rhs.cache_read,
-            cache_write: self.cache_write + rhs.cache_write,
-            reasoning: self.reasoning + rhs.reasoning,
+            input: self.input.saturating_add(rhs.input),
+            output: self.output.saturating_add(rhs.output),
+            cache_read: self.cache_read.saturating_add(rhs.cache_read),
+            cache_write: self.cache_write.saturating_add(rhs.cache_write),
+            reasoning: self.reasoning.saturating_add(rhs.reasoning),
         }
     }
 }
@@ -146,5 +161,18 @@ mod tests {
         let sum: TokenUsage = [a, b].iter().sum();
         assert_eq!(sum.input, 11);
         assert_eq!(sum.total(), 20);
+    }
+
+    #[test]
+    fn hostile_values_saturate_instead_of_overflowing() {
+        let huge = TokenUsage {
+            input: u64::MAX,
+            output: u64::MAX,
+            cache_read: u64::MAX,
+            cache_write: u64::MAX,
+            reasoning: u64::MAX,
+        };
+        assert_eq!((huge + huge).total(), u64::MAX);
+        assert_eq!(huge.context(), u64::MAX);
     }
 }

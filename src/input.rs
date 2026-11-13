@@ -43,7 +43,7 @@ pub fn map_key(key: KeyEvent, dialog_open: bool) -> Option<Action> {
     }
     if dialog_open {
         return Some(match key.code {
-            KeyCode::Char('y' | 'Y') | KeyCode::Enter => Action::Confirm,
+            KeyCode::Char('y' | 'Y') => Action::Confirm,
             _ => Action::Cancel,
         });
     }
@@ -93,6 +93,8 @@ mod tests {
             map_key(press(KeyCode::Char('q')), true),
             Some(Action::Cancel)
         );
+        // Enter must never confirm a kill: only an explicit `y` does.
+        assert_eq!(map_key(press(KeyCode::Enter), true), Some(Action::Cancel));
         let ctrl_c = KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL);
         assert_eq!(map_key(ctrl_c, true), Some(Action::Quit));
     }

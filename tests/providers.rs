@@ -107,3 +107,30 @@ fn missing_directories_are_not_errors() {
             .is_none()
     );
 }
+
+/// A symlink named `*.jsonl` (e.g. to `/dev/zero`) must never be opened.
+#[cfg(unix)]
+#[test]
+fn symlinked_logs_are_ignored() {
+    use std::os::unix::fs::symlink;
+
+    let home = tempdir().unwrap();
+    let dir = home.path().join("projects/-w");
+    fs::create_dir_all(&dir).unwrap();
+    symlink("/dev/zero", dir.join("evil.jsonl")).unwrap();
+    let mut claude = ClaudeProvider::new(home.path());
+    assert!(claude.usage_for(Path::new("/w")).unwrap().is_none());
+
+    // Same for a symlinked day directory in the Codex tree.
+    let target = home.path().join("elsewhere");
+    fs::create_dir_all(&target).unwrap();
+    write(
+        &target.join("rollout-x.jsonl"),
+        "{\"type\":\"session_meta\",\"payload\":{\"id\":\"x\",\"cwd\":\"/w\"}}\n",
+    );
+    let days = home.path().join("sessions/2026/11");
+    fs::create_dir_all(&days).unwrap();
+    symlink(&target, days.join("12")).unwrap();
+    let mut codex = CodexProvider::new(home.path());
+    assert!(codex.usage_for(Path::new("/w")).unwrap().is_none());
+}

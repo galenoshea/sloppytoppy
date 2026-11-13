@@ -97,13 +97,15 @@ impl App {
     /// Installs a new snapshot and extends the history series.
     pub fn apply_snapshot(&mut self, snapshot: Snapshot) {
         let cpu: f32 = snapshot.entries.iter().map(|e| e.cpu).sum();
-        let mem: u64 = snapshot.entries.iter().map(|e| e.memory).sum();
-        let tokens: u64 = snapshot
+        let mem = snapshot
+            .entries
+            .iter()
+            .fold(0u64, |acc, e| acc.saturating_add(e.memory));
+        let tokens = snapshot
             .entries
             .iter()
             .filter_map(|e| e.usage.as_ref())
-            .map(|u| u.tokens.total())
-            .sum();
+            .fold(0u64, |acc, u| acc.saturating_add(u.tokens.total()));
         self.cpu.push(cpu.round() as u64);
         self.memory_mb.push(mem / 1_048_576);
         self.tokens.push(tokens);

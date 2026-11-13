@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 use std::fs::{self, File};
-use std::io::{self, BufRead, BufReader};
+use std::io::{self, BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
@@ -14,6 +14,9 @@ use super::{SessionUsage, TokenUsage, UsageError, UsageProvider};
 
 /// How many of the most recent day-directories to consider.
 const RECENT_DAYS: usize = 14;
+
+/// Upper bound for the `session_meta` line (real ones are a few KiB).
+const FIRST_LINE_LIMIT: u64 = 1 << 20;
 
 /// Reads usage from Codex rollout logs.
 #[derive(Debug)]
@@ -76,10 +79,11 @@ impl UsageProvider for CodexProvider {
 /// Subdirectories of `dir`, newest (lexicographically greatest) first.
 fn subdirs_desc(dir: &Path) -> io::Result<Vec<PathBuf>> {
     let mut v: Vec<PathBuf> = match fs::read_dir(dir) {
+        // `file_type` does not follow symlinks: a symlinked "directory" is skipped.
         Ok(rd) => rd
             .flatten()
+            .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
             .map(|e| e.path())
-            .filter(|p| p.is_dir())
             .collect(),
         Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
         Err(e) => return Err(e),
@@ -108,7 +112,11 @@ fn recent_logs(root: &Path) -> io::Result<Vec<(SystemTime, PathBuf)>> {
             if path.extension().is_none_or(|e| e != "jsonl") {
                 continue;
             }
-            if let Ok(modified) = entry.metadata().and_then(|m| m.modified()) {
+            // Regular files only (`DirEntry::metadata` does not follow symlinks).
+            if let Ok(meta) = entry.metadata()
+                && meta.is_file()
+                && let Ok(modified) = meta.modified()
+            {
                 logs.push((modified, path));
             }
         }
@@ -119,7 +127,8 @@ fn recent_logs(root: &Path) -> io::Result<Vec<(SystemTime, PathBuf)>> {
 /// Reads the `session_meta` line (always first) and returns its `cwd`.
 fn read_session_cwd(path: &Path) -> Option<PathBuf> {
     let mut first = String::new();
-    BufReader::new(File::open(path).ok()?)
+    // Bounded: a hostile file with no newline must not exhaust memory.
+    BufReader::new(File::open(path).ok()?.take(FIRST_LINE_LIMIT))
         .read_line(&mut first)
         .ok()?;
     let envelope: Envelope = serde_json::from_str(&first).ok()?;
@@ -207,7 +216,7 @@ pub(crate) fn parse(reader: impl BufRead) -> io::Result<SessionUsage> {
                 }
             }
             "event_msg" => match payload.get("type").and_then(Value::as_str) {
-                Some("task_started") => turns += 1,
+                Some("task_started") => turns = turns.saturating_add(1),
                 Some("token_count") => {
                     let Some(info) = payload.get("info").filter(|v| !v.is_null()) else {
                         continue;
@@ -217,7 +226,7 @@ pub(crate) fn parse(reader: impl BufRead) -> io::Result<SessionUsage> {
                     };
                     out.tokens = info.total_token_usage.into();
                     let last = TokenUsage::from(info.last_token_usage);
-                    out.context_tokens = last.input + last.cache_read + last.cache_write;
+                    out.context_tokens = last.context();
                     out.context_window = info.model_context_window.or(out.context_window);
                 }
                 _ => {}

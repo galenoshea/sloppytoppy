@@ -24,7 +24,7 @@ pub(super) fn render(frame: &mut Frame, area: Rect, app: &App) {
         mem,
         &format!(
             "Memory  {}",
-            format::memory(app.memory_mb.latest() * 1_048_576)
+            format::memory(app.memory_mb.latest().saturating_mul(1_048_576))
         ),
         &app.memory_mb,
         CRIMSON,
