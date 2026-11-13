@@ -1,6 +1,19 @@
-# sloppytoppy
+<p align="center">
+  <img src="https://raw.githubusercontent.com/galenoshea/sloppytoppy/master/assets/sloppytoppy-wordmark.png" alt="sloppytoppy" width="600">
+</p>
 
-**`top` for AI coding agents.** Watch Claude Code and Codex processes, see what each session is consuming, and stop a runaway agent without leaving the terminal.
+<p align="center">
+  <strong>top for AI coding agents.</strong><br>
+  Keep an eye on the slop. Stay on top of your agents.
+</p>
+
+<p align="center">
+  <img alt="Claude Code and Codex" src="https://img.shields.io/badge/agents-Claude%20%2B%20Codex-7f1238?style=flat-square">
+  <img alt="Local first" src="https://img.shields.io/badge/telemetry-local-ff3448?style=flat-square">
+  <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-7f1238?style=flat-square">
+</p>
+
+Watch Claude Code and Codex processes, see what each session is consuming, and stop a runaway agent without leaving the terminal.
 
 `sloppytoppy` combines live process telemetry with the token data already recorded by each agent CLI. It provides:
 
