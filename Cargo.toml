@@ -6,6 +6,7 @@ rust-version = "1.88"
 description = "Terminal process and token monitor for Claude Code and Codex agents"
 license = "MIT"
 repository = "https://github.com/galenoshea/sloppytoppy"
+homepage = "https://github.com/galenoshea/sloppytoppy"
 
 readme = "README.md"
 keywords = ["ai-agents", "claude", "codex", "monitoring", "terminal"]
@@ -40,3 +41,8 @@ cast_sign_loss = "allow"
 lto = "thin"
 codegen-units = 1
 strip = true
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"

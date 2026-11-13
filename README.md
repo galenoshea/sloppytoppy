@@ -12,19 +12,22 @@
 
 ## Install
 
-From the repository:
+### Prebuilt binary
 
 ```sh
-cargo install --git https://github.com/galenoshea/sloppytoppy
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://github.com/galenoshea/sloppytoppy/releases/latest/download/sloppytoppy-installer.sh | sh
 ```
 
-Or, once the crate is published:
+The installer detects Apple Silicon macOS, Intel macOS, x86-64 Linux, and ARM64 Linux, then installs the matching executable in Cargo's bin directory. It does not require Rust.
+
+### Cargo
 
 ```sh
-cargo install sloppytoppy
+cargo install sloppytoppy --locked
 ```
 
-Requires Rust 1.88 or newer.
+Installing through Cargo requires Rust 1.88 or newer.
 
 ## Usage
 
@@ -86,5 +89,7 @@ cargo fmt --all -- --check
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-targets --all-features
 ```
+
+Releases are built from version tags. See [`RELEASING.md`](RELEASING.md) for the maintainer workflow.
 
 Licensed under the MIT License.
